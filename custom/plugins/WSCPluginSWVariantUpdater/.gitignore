@@ -1,0 +1,51 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# IDE
+/.idea/
+/.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Composer
+/composer.lock
+/auth.json
+
+# PHP-CS-Fixer
+/.php-cs-fixer.cache
+/var/cache/.php-cs-fixer.cache
+
+# PHPStan
+/var/cache/phpstan/
+
+# PHPUnit
+/.phpunit.result.cache
+/phpunit.xml
+
+# Build
+/var/
+/.cache/
+/build/
+/dist/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+/logs/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~

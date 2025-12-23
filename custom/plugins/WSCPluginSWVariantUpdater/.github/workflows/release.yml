@@ -1,0 +1,112 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  create-release:
+    name: Create GitHub Release with Plugin ZIP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, json
+          coverage: none
+
+      - name: Install production dependencies
+        run: composer install --no-dev --optimize-autoloader --prefer-dist --no-progress
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Plugin version: $VERSION"
+
+      - name: Update version in composer.json
+        run: |
+          cd custom/plugins/WSCPluginSWVariantUpdater
+          composer config version "${{ steps.get_version.outputs.VERSION }}"
+
+      - name: Create plugin ZIP archive
+        run: |
+          cd custom/plugins
+
+          # Create archive using git archive (respects .gitattributes)
+          cd WSCPluginSWVariantUpdater
+          git archive --format=zip --prefix=WSCPluginSWVariantUpdater/ HEAD -o ../WSCPluginSWVariantUpdater-${{ steps.get_version.outputs.VERSION }}.zip
+
+          cd ..
+
+          # Add vendor directory if it exists (not exported via git archive)
+          if [ -d "WSCPluginSWVariantUpdater/vendor" ]; then
+            zip -r WSCPluginSWVariantUpdater-${{ steps.get_version.outputs.VERSION }}.zip WSCPluginSWVariantUpdater/vendor
+          fi
+
+          echo "Created: WSCPluginSWVariantUpdater-${{ steps.get_version.outputs.VERSION }}.zip"
+          ls -lh WSCPluginSWVariantUpdater-${{ steps.get_version.outputs.VERSION }}.zip
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          CHANGELOG=$(git tag -l --format='%(contents)' ${{ github.ref_name }})
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="Release ${{ steps.get_version.outputs.VERSION }}"
+          fi
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## WSCPluginSWVariantUpdater v${{ steps.get_version.outputs.VERSION }}
+
+            ${{ steps.changelog.outputs.CHANGELOG }}
+
+            ### Installation
+
+            1. Download the ZIP file
+            2. Extract to `custom/plugins/WSCPluginSWVariantUpdater`
+            3. Run:
+               ```bash
+               bin/console plugin:refresh
+               bin/console plugin:install --activate WSCPluginSWVariantUpdater
+               bin/console cache:clear
+               ```
+
+            ### Requirements
+
+            - Shopware 6.5.0 or higher
+            - PHP 8.1, 8.2 or 8.3
+
+            ### Documentation
+
+            - [German Documentation](README.md)
+            - [English Documentation](README_EN.md)
+          files: |
+            custom/plugins/WSCPluginSWVariantUpdater-${{ steps.get_version.outputs.VERSION }}.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: WSCPluginSWVariantUpdater-${{ steps.get_version.outputs.VERSION }}
+          path: custom/plugins/WSCPluginSWVariantUpdater-${{ steps.get_version.outputs.VERSION }}.zip
+          retention-days: 90

@@ -1,0 +1,11 @@
+parameters:
+    level: 8
+    paths:
+        - src
+    excludePaths:
+        - src/Resources
+    bootstrapFiles:
+        - ../../../vendor/autoload.php
+    ignoreErrors:
+        # Shopware specific ignores if needed
+    tmpDir: var/cache/phpstan

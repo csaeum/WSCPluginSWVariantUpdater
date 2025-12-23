@@ -1,0 +1,44 @@
+{
+    "name": "wsc-plugin/sw-variant-updater",
+    "description": "Shopware 6 Plugin to update product variant names and numbers",
+    "version": "1.0.0",
+    "type": "shopware-platform-plugin",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "WSC Plugin"
+        }
+    ],
+    "require": {
+        "shopware/core": "~6.5.0|~6.6.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^1.10",
+        "friendsofphp/php-cs-fixer": "^3.40"
+    },
+    "scripts": {
+        "phpstan": "phpstan analyse -c phpstan.neon --memory-limit=1G",
+        "cs-check": "php-cs-fixer fix --dry-run --diff --verbose",
+        "cs-fix": "php-cs-fixer fix --verbose",
+        "test": [
+            "@phpstan",
+            "@cs-check"
+        ]
+    },
+    "extra": {
+        "shopware-plugin-class": "WSCPlugin\\SWVariantUpdater\\WSCPluginSWVariantUpdater",
+        "label": {
+            "de-DE": "Varianten Updater",
+            "en-GB": "Variant Updater"
+        },
+        "description": {
+            "de-DE": "Aktualisiert Namen und Artikelnummern von Produktvarianten",
+            "en-GB": "Updates names and product numbers of product variants"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "WSCPlugin\\SWVariantUpdater\\": "src/"
+        }
+    }
+}

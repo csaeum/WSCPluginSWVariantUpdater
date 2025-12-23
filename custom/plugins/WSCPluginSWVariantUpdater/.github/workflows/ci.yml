@@ -1,0 +1,157 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  php-quality-checks:
+    name: PHP Quality Checks (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, json
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --strict --no-check-lock
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+      - name: PHP Syntax Check
+        run: find src -name "*.php" -print0 | xargs -0 -n1 php -l
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+      - name: Run PHPStan
+        run: composer phpstan
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+      - name: Run PHP-CS-Fixer (dry-run)
+        run: composer cs-check
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+  json-validation:
+    name: JSON Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate composer.json
+        run: jq empty composer.json
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+      - name: Check JSON syntax
+        run: |
+          echo "Validating JSON files..."
+          for file in $(find . -name "*.json" -not -path "./vendor/*"); do
+            echo "Checking $file"
+            jq empty "$file" || exit 1
+          done
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, json
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+      - name: Run security audit
+        run: composer audit
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+      - name: Check for outdated dependencies
+        run: composer outdated --direct
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+        continue-on-error: true
+
+  plugin-validation:
+    name: Shopware Plugin Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate plugin structure
+        run: |
+          echo "Checking plugin structure..."
+
+          # Check required files
+          if [ ! -f "composer.json" ]; then
+            echo "Error: composer.json not found"
+            exit 1
+          fi
+
+          if [ ! -f "src/WSCPluginSWVariantUpdater.php" ]; then
+            echo "Error: Plugin base class not found"
+            exit 1
+          fi
+
+          if [ ! -f "src/Resources/config/services.xml" ]; then
+            echo "Error: services.xml not found"
+            exit 1
+          fi
+
+          echo "✓ Plugin structure valid"
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+      - name: Validate services.xml
+        run: |
+          if ! command -v xmllint &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y libxml2-utils
+          fi
+          xmllint --noout src/Resources/config/services.xml
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+  code-style:
+    name: Code Style Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, json
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
+
+      - name: Check code style with PHP-CS-Fixer
+        run: composer cs-check
+        working-directory: custom/plugins/WSCPluginSWVariantUpdater
