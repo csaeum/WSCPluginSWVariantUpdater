@@ -28,7 +28,7 @@
 
         <!-- Message Handlers -->
         <service id="WSCPlugin\SWVariantUpdater\MessageHandler\UpdateVariantsMessageHandler">
-            <argument type="service" id="messenger.bus.shopware"/>
+            <argument type="service" id="messenger.default_bus"/>
             <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\ProgressTracker"/>
             <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\BatchSizeCalculator"/>
             <argument type="service" id="logger"/>
@@ -46,7 +46,7 @@
         <!-- Commands -->
         <service id="WSCPlugin\SWVariantUpdater\Command\UpdateVariantCommand">
             <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\VariantUpdateService"/>
-            <argument type="service" id="messenger.bus.shopware"/>
+            <argument type="service" id="messenger.default_bus"/>
             <tag name="console.command"/>
         </service>
     </services>

@@ -3,7 +3,6 @@
 namespace WSCPlugin\SWVariantUpdater\MessageHandler;
 
 use Psr\Log\LoggerInterface;
-use Shopware\Core\Framework\MessageQueue\Handler\AbstractMessageHandler;
 use WSCPlugin\SWVariantUpdater\Message\UpdateVariantsBatchMessage;
 use WSCPlugin\SWVariantUpdater\Service\BatchSizeCalculator;
 use WSCPlugin\SWVariantUpdater\Service\ProgressTracker;
@@ -12,7 +11,7 @@ use WSCPlugin\SWVariantUpdater\Service\VariantUpdateService;
 /**
  * Worker handler that processes individual batches.
  */
-class UpdateVariantsBatchMessageHandler extends AbstractMessageHandler
+class UpdateVariantsBatchMessageHandler
 {
     public function __construct(
         private readonly VariantUpdateService $variantUpdateService,
@@ -22,10 +21,7 @@ class UpdateVariantsBatchMessageHandler extends AbstractMessageHandler
     ) {
     }
 
-    /**
-     * @param UpdateVariantsBatchMessage $message
-     */
-    public function handle($message): void
+    public function __invoke(UpdateVariantsBatchMessage $message): void
     {
         $productNumbers = $message->getProductNumbers();
         $config = $message->getConfig();
@@ -109,10 +105,5 @@ class UpdateVariantsBatchMessageHandler extends AbstractMessageHandler
 
             throw $e;
         }
-    }
-
-    public static function getHandledMessages(): iterable
-    {
-        return [UpdateVariantsBatchMessage::class];
     }
 }

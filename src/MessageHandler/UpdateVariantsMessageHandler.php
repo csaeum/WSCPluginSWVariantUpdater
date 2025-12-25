@@ -3,7 +3,6 @@
 namespace WSCPlugin\SWVariantUpdater\MessageHandler;
 
 use Psr\Log\LoggerInterface;
-use Shopware\Core\Framework\MessageQueue\Handler\AbstractMessageHandler;
 use Symfony\Component\Messenger\MessageBusInterface;
 use WSCPlugin\SWVariantUpdater\Message\UpdateVariantsBatchMessage;
 use WSCPlugin\SWVariantUpdater\Message\UpdateVariantsMessage;
@@ -13,7 +12,7 @@ use WSCPlugin\SWVariantUpdater\Service\ProgressTracker;
 /**
  * Splitter handler that splits the initial message into batch messages.
  */
-class UpdateVariantsMessageHandler extends AbstractMessageHandler
+class UpdateVariantsMessageHandler
 {
     public function __construct(
         private readonly MessageBusInterface $messageBus,
@@ -23,10 +22,7 @@ class UpdateVariantsMessageHandler extends AbstractMessageHandler
     ) {
     }
 
-    /**
-     * @param UpdateVariantsMessage $message
-     */
-    public function handle($message): void
+    public function __invoke(UpdateVariantsMessage $message): void
     {
         $productNumbers = $message->getProductNumbers();
         $config = $message->getConfig();
@@ -76,10 +72,5 @@ class UpdateVariantsMessageHandler extends AbstractMessageHandler
             'batch_id' => $batchId,
             'batches_dispatched' => $totalBatches,
         ]);
-    }
-
-    public static function getHandledMessages(): iterable
-    {
-        return [UpdateVariantsMessage::class];
     }
 }
