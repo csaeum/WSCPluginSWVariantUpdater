@@ -2,18 +2,15 @@
 
 namespace WSCPlugin\SWVariantUpdater\Command;
 
-use Shopware\Core\Content\Product\ProductEntity;
 use Shopware\Core\Framework\Context;
-use Shopware\Core\Framework\DataAbstractionLayer\EntityRepository;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Criteria;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsAnyFilter;
-use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use WSCPlugin\SWVariantUpdater\Service\VariantUpdateConfig;
+use WSCPlugin\SWVariantUpdater\Service\VariantUpdateService;
 
 #[AsCommand(
     name: 'wsc:variant:update',
@@ -22,7 +19,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class UpdateVariantCommand extends Command
 {
     public function __construct(
-        private readonly EntityRepository $productRepository
+        private readonly VariantUpdateService $variantUpdateService
     ) {
         parent::__construct();
     }
@@ -77,178 +74,98 @@ class UpdateVariantCommand extends Command
             return Command::FAILURE;
         }
 
-        $dryRun = $input->getOption('dry-run');
-        $nameOnly = $input->getOption('name-only');
-        $numberOnly = $input->getOption('number-only');
+        // Create config from options
+        $config = VariantUpdateConfig::fromArray([
+            'dry-run' => $input->getOption('dry-run'),
+            'name-only' => $input->getOption('name-only'),
+            'number-only' => $input->getOption('number-only'),
+        ]);
 
-        if ($dryRun) {
+        if ($config->dryRun) {
             $io->warning('DRY RUN MODE - No changes will be saved');
         }
 
-        $totalUpdated = 0;
+        // Process variants using service
+        $result = $this->variantUpdateService->updateVariants(
+            $productNumbers,
+            $config,
+            $context
+        );
 
-        foreach ($productNumbers as $productNumber) {
-            $io->section("Processing product: {$productNumber}");
+        // Display detailed changes
+        $this->displayChanges($io, $result);
 
-            // Load parent product
-            $parentProduct = $this->loadParentProduct($productNumber, $context);
-
-            if (!$parentProduct) {
-                $io->error("Product with number '{$productNumber}' not found.");
-                continue;
+        // Display warnings
+        if ($result->hasWarnings()) {
+            $io->warning('Warnings occurred during processing:');
+            foreach ($result->getWarnings() as $productNumber => $warning) {
+                $io->text("  - {$productNumber}: {$warning}");
             }
-
-            // Load variants
-            $variants = $this->loadVariants($parentProduct->getId(), $context);
-
-            if ($variants->count() === 0) {
-                $io->warning("No variants found for product '{$productNumber}'.");
-                continue;
-            }
-
-            $io->text("Found {$variants->count()} variant(s) for '{$parentProduct->getName()}'");
-            $io->newLine();
-
-            // Process each variant
-            foreach ($variants as $variant) {
-                $updated = $this->processVariant(
-                    $variant,
-                    $parentProduct,
-                    $context,
-                    $io,
-                    $dryRun,
-                    $nameOnly,
-                    $numberOnly
-                );
-
-                if ($updated) {
-                    $totalUpdated++;
-                }
-            }
-
             $io->newLine();
         }
 
-        // Summary
-        $io->success("Successfully processed {$totalUpdated} variant(s)" . ($dryRun ? ' (dry run)' : ''));
-
-        return Command::SUCCESS;
-    }
-
-    private function loadParentProduct(string $productNumber, Context $context): ?ProductEntity
-    {
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('productNumber', $productNumber));
-        $criteria->addFilter(new EqualsFilter('parentId', null));
-
-        $result = $this->productRepository->search($criteria, $context);
-
-        return $result->first();
-    }
-
-    private function loadVariants(string $parentId, Context $context)
-    {
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('parentId', $parentId));
-        $criteria->addAssociation('options.group');
-
-        return $this->productRepository->search($criteria, $context)->getEntities();
-    }
-
-    private function processVariant(
-        ProductEntity $variant,
-        ProductEntity $parent,
-        Context $context,
-        SymfonyStyle $io,
-        bool $dryRun,
-        bool $nameOnly,
-        bool $numberOnly
-    ): bool {
-        $updates = [];
-        $hasChanges = false;
-
-        // Get option names
-        $optionNames = [];
-        if ($variant->getOptions()) {
-            foreach ($variant->getOptions() as $option) {
-                $optionNames[] = $option->getName();
+        // Display errors
+        if ($result->hasErrors()) {
+            $io->error('Errors occurred during processing:');
+            foreach ($result->getErrors() as $productNumber => $error) {
+                $io->text("  - {$productNumber}: {$error}");
             }
-        }
-
-        $optionString = implode(' ', $optionNames);
-
-        // Update name
-        if (!$numberOnly) {
-            $newName = trim($parent->getName() . ' ' . $optionString);
-            if ($variant->getName() !== $newName) {
-                $io->text("  Name: '{$variant->getName()}' -> '{$newName}'");
-                $updates['name'] = $newName;
-                $hasChanges = true;
-            }
-        }
-
-        // Update product number
-        if (!$nameOnly) {
-            $newProductNumber = $this->generateProductNumber(
-                $parent->getProductNumber(),
-                $optionNames
-            );
-
-            if ($variant->getProductNumber() !== $newProductNumber) {
-                $io->text("  Number: '{$variant->getProductNumber()}' -> '{$newProductNumber}'");
-                $updates['productNumber'] = $newProductNumber;
-                $hasChanges = true;
-            }
-        }
-
-        // Save changes
-        if ($hasChanges && !$dryRun) {
-            $updates['id'] = $variant->getId();
-            $this->productRepository->update([$updates], $context);
-        }
-
-        if ($hasChanges) {
             $io->newLine();
         }
 
-        return $hasChanges;
+        // Display summary statistics
+        $this->displaySummary($io, $result, $config);
+
+        return $result->hasErrors() ? Command::FAILURE : Command::SUCCESS;
     }
 
-    private function generateProductNumber(string $parentNumber, array $optionNames): string
+    /**
+     * Display detailed changes for each variant.
+     */
+    private function displayChanges(SymfonyStyle $io, \WSCPlugin\SWVariantUpdater\Service\VariantUpdateResult $result): void
     {
-        if (empty($optionNames)) {
-            return $parentNumber;
+        foreach ($result->getVariantChanges() as $variantId => $changes) {
+            if (isset($changes['name'])) {
+                $io->text("  Name: '{$changes['name']['old']}' -> '{$changes['name']['new']}'");
+            }
+            if (isset($changes['number'])) {
+                $io->text("  Number: '{$changes['number']['old']}' -> '{$changes['number']['new']}'");
+            }
+            $io->newLine();
         }
-
-        // Convert option names to lowercase
-        $optionParts = array_map(function ($name) {
-            return $this->normalizeString(mb_strtolower($name));
-        }, $optionNames);
-
-        // Join with hyphen
-        $optionSuffix = implode('-', $optionParts);
-
-        return $parentNumber . '-' . $optionSuffix;
     }
 
-    private function normalizeString(string $string): string
+    /**
+     * Display summary statistics.
+     */
+    private function displaySummary(SymfonyStyle $io, \WSCPlugin\SWVariantUpdater\Service\VariantUpdateResult $result, VariantUpdateConfig $config): void
     {
-        // Replace special characters
-        $replacements = [
-            'ä' => 'ae',
-            'ö' => 'oe',
-            'ü' => 'ue',
-            'ß' => 'ss',
-            'Ä' => 'ae',
-            'Ö' => 'oe',
-            'Ü' => 'ue',
+        $messages = [
+            sprintf('Products processed: %d', $result->getProductCount()),
+            sprintf('Total variants checked: %d', $result->getTotalVariants()),
+            sprintf('Variants updated: %d', $result->getVariantsUpdated()),
         ];
 
-        $string = str_replace(array_keys($replacements), array_values($replacements), $string);
+        if (!$config->numberOnly) {
+            $messages[] = sprintf('Names changed: %d', $result->getNameChanges());
+        }
 
-        // Replace spaces with hyphens
-        $string = str_replace(' ', '-', $string);
+        if (!$config->nameOnly) {
+            $messages[] = sprintf('Numbers changed: %d', $result->getNumberChanges());
+        }
 
-        return $string;
+        if ($result->hasWarnings()) {
+            $messages[] = sprintf('Warnings: %d', \count($result->getWarnings()));
+        }
+
+        if ($result->hasErrors()) {
+            $messages[] = sprintf('Errors: %d', \count($result->getErrors()));
+        }
+
+        if ($config->dryRun) {
+            $messages[] = '(DRY RUN - no changes saved)';
+        }
+
+        $io->success($messages);
     }
 }
