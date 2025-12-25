@@ -1,0 +1,45 @@
+{
+  "wsc-variant-updater": {
+    "general": {
+      "mainMenuItemGeneral": "Variant Updater",
+      "descriptionTextModule": "Updates variant names and numbers based on options"
+    },
+    "index": {
+      "modeSelectionTitle": "Product Selection",
+      "modeLabel": "Mode",
+      "modeProductNumbers": "Enter product numbers",
+      "modeEntitySelect": "Select products",
+      "modeAll": "All products with variants",
+      "productNumbersLabel": "Product numbers",
+      "productNumbersPlaceholder": "jacket-001, shoes-042, shirt-99",
+      "productNumbersHelp": "Comma-separated list of parent product numbers",
+      "selectProductsLabel": "Products",
+      "selectProductsPlaceholder": "Select products...",
+      "allProductsWarning": "⚠️ WARNING: This option will update ALL products with variants in your shop!",
+      "optionsTitle": "Execution Options",
+      "configHint": "Templates and default options can be configured in the plugin configuration (Settings → System → Plugins → WSC Variant Updater → Configure)",
+      "dryRunLabel": "Dry-run (Preview)",
+      "dryRunHelp": "Shows changes without saving",
+      "progressTitle": "Progress",
+      "progressStatus": "Status",
+      "progressProcessed": "Processed",
+      "progressFailed": "Errors",
+      "saveButton": "Save settings",
+      "executeButton": "Execute now",
+      "confirmAllTitle": "Update all products?",
+      "confirmAllMessage": "Are you sure you want to update all products with variants? This action cannot be undone.",
+      "confirmButton": "Yes, proceed",
+      "cancelButton": "Cancel"
+    },
+    "notification": {
+      "configLoadError": "Error loading configuration",
+      "noProductsSelected": "Please select at least one product",
+      "updateQueued": "Update queued for {count} product | Update queued for {count} products",
+      "updateFailed": "Error starting update",
+      "updateCompleted": "{count} product successfully updated | {count} products successfully updated",
+      "updateFailedWithErrors": "Update completed with errors. Please check the logs.",
+      "settingsSaved": "Settings saved successfully",
+      "settingsSaveFailed": "Error saving settings"
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "wsc-variant-updater": {
+    "general": {
+      "mainMenuItemGeneral": "Varianten-Updater",
+      "descriptionTextModule": "Aktualisiert Variantennamen und -nummern basierend auf Optionen"
+    },
+    "index": {
+      "modeSelectionTitle": "Produktauswahl",
+      "modeLabel": "Modus",
+      "modeProductNumbers": "Produktnummern eingeben",
+      "modeEntitySelect": "Produkte auswählen",
+      "modeAll": "Alle Produkte mit Varianten",
+      "productNumbersLabel": "Produktnummern",
+      "productNumbersPlaceholder": "jacket-001, shoes-042, shirt-99",
+      "productNumbersHelp": "Komma-getrennte Liste von Parent-Produktnummern",
+      "selectProductsLabel": "Produkte",
+      "selectProductsPlaceholder": "Produkte auswählen...",
+      "allProductsWarning": "⚠️ WARNUNG: Diese Option aktualisiert ALLE Produkte mit Varianten in Ihrem Shop!",
+      "optionsTitle": "Ausführungs-Optionen",
+      "configHint": "Templates und Standard-Optionen können in der Plugin-Konfiguration angepasst werden (Einstellungen → System → Plugins → WSC Variant Updater → Konfigurieren)",
+      "dryRunLabel": "Dry-Run (Vorschau)",
+      "dryRunHelp": "Zeigt Änderungen an ohne zu speichern",
+      "progressTitle": "Fortschritt",
+      "progressStatus": "Status",
+      "progressProcessed": "Verarbeitet",
+      "progressFailed": "Fehler",
+      "saveButton": "Einstellungen speichern",
+      "executeButton": "Jetzt ausführen",
+      "confirmAllTitle": "Alle Produkte aktualisieren?",
+      "confirmAllMessage": "Sind Sie sicher, dass Sie alle Produkte mit Varianten aktualisieren möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "confirmButton": "Ja, fortfahren",
+      "cancelButton": "Abbrechen"
+    },
+    "notification": {
+      "configLoadError": "Fehler beim Laden der Konfiguration",
+      "noProductsSelected": "Bitte wählen Sie mindestens ein Produkt aus",
+      "updateQueued": "Update für {count} Produkt(e) wurde in die Warteschlange eingereiht | Update für {count} Produkte wurde in die Warteschlange eingereiht",
+      "updateFailed": "Fehler beim Starten des Updates",
+      "updateCompleted": "{count} Produkt wurde erfolgreich aktualisiert | {count} Produkte wurden erfolgreich aktualisiert",
+      "updateFailedWithErrors": "Update mit Fehlern abgeschlossen. Bitte prüfen Sie die Logs.",
+      "settingsSaved": "Einstellungen erfolgreich gespeichert",
+      "settingsSaveFailed": "Fehler beim Speichern der Einstellungen"
+    }
+  }
+}

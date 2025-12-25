@@ -47,7 +47,54 @@ composer install
 
 ## Verwendung
 
-### Grundlegende Verwendung
+### Admin-Interface
+
+Das Plugin bietet eine benutzerfreundliche Oberfläche im Shopware Admin:
+
+**Zugriff:** `Einstellungen → Erweiterungen → Variant Updater`
+
+#### Konfiguration
+
+Vor der ersten Verwendung sollten die Twig-Templates konfiguriert werden:
+
+1. Gehe zu `Einstellungen → System → Plugins`
+2. Finde "WSC Variant Updater" und klicke auf `⋮ → Konfigurieren`
+3. Konfiguriere die Templates:
+
+**Twig-Template für Produktnamen:**
+```twig
+{{ parentProduct.translated.name }} {{ options|map(o => o.translated.name)|join(' ') }}
+```
+
+**Twig-Template für Produktnummern:**
+```twig
+{{ parentProduct.productNumber }}-{{ options|map(o => o.translated.name|lower|replace({' ': '-'}))|join('-') }}
+```
+
+**Standard-Optionen:**
+- Nur Namen aktualisieren
+- Nur Nummern aktualisieren
+- Initiale Batch-Größe (10-500)
+
+#### Ausführung
+
+1. Gehe zu `Einstellungen → Erweiterungen → Variant Updater`
+2. Wähle den Modus:
+   - **Produktnummern eingeben**: Komma-getrennte Liste (z.B. `jacket-001, shoes-042`)
+   - **Alle Produkte mit Varianten**: Aktualisiert alle Produkte (mit Bestätigung)
+3. Aktiviere optional "Dry-Run (Vorschau)" zum Testen
+4. Klicke auf "Jetzt ausführen"
+5. Beobachte den Fortschritt in der Progress-Bar
+
+**Hinweis:** Updates werden über die Message Queue verarbeitet. Stelle sicher, dass der Message Queue Worker läuft:
+
+```bash
+bin/console messenger:consume async -vv
+```
+
+### CLI-Verwendung
+
+#### Grundlegende Verwendung
 
 ```bash
 # Einzelnes Hauptprodukt aktualisieren
@@ -55,17 +102,29 @@ bin/console wsc:variant:update --product-numbers="artikelnummer123"
 
 # Mehrere Hauptprodukte auf einmal
 bin/console wsc:variant:update --product-numbers="artikel1,artikel2,artikel3"
+
+# Alle Produkte mit Varianten aktualisieren (mit Bestätigung)
+bin/console wsc:variant:update --all-products
 ```
 
-### Optionen
+### CLI-Optionen
 
-#### --product-numbers (ERFORDERLICH)
+#### --product-numbers
 Eine einzelne Artikelnummer oder kommagetrennte Liste von Artikelnummern der Hauptprodukte.
 
 ```bash
 bin/console wsc:variant:update --product-numbers="tollesleder"
 bin/console wsc:variant:update --product-numbers="leder1,leder2,leder3"
 ```
+
+#### --all-products
+Aktualisiert ALLE Produkte mit Varianten. Zeigt vor der Ausführung eine Bestätigung an.
+
+```bash
+bin/console wsc:variant:update --all-products --dry-run
+```
+
+**Hinweis:** Entweder `--product-numbers` ODER `--all-products` muss angegeben werden, aber nicht beides gleichzeitig.
 
 #### --dry-run (optional)
 Zeigt nur an, was geändert würde, ohne die Datenbank zu aktualisieren.
@@ -77,6 +136,8 @@ bin/console wsc:variant:update --product-numbers="tollesleder" --dry-run
 #### --name-only (optional)
 Aktualisiert nur die Produktnamen, lässt Artikelnummern unverändert.
 
+**Hinweis:** Diese Option kann auch in der Plugin-Konfiguration als Standard gesetzt werden. CLI-Flags überschreiben die Konfiguration.
+
 ```bash
 bin/console wsc:variant:update --product-numbers="tollesleder" --name-only
 ```
@@ -84,8 +145,17 @@ bin/console wsc:variant:update --product-numbers="tollesleder" --name-only
 #### --number-only (optional)
 Aktualisiert nur die Artikelnummern, lässt Produktnamen unverändert.
 
+**Hinweis:** Diese Option kann auch in der Plugin-Konfiguration als Standard gesetzt werden. CLI-Flags überschreiben die Konfiguration.
+
 ```bash
 bin/console wsc:variant:update --product-numbers="tollesleder" --number-only
+```
+
+#### --sync (optional)
+Führt die Verarbeitung synchron aus (blockierend), statt über die Message Queue.
+
+```bash
+bin/console wsc:variant:update --product-numbers="tollesleder" --sync
 ```
 
 ## Beispiele
@@ -163,9 +233,10 @@ bin/console wsc:variant:update --product-numbers="tollesleder" --number-only
 
 ### Systemanforderungen
 
-- **Shopware:** 6.5.0 oder höher
+- **Shopware:** 6.5.0 oder höher (getestet mit 6.5, 6.6, 6.7)
 - **PHP:** 8.1, 8.2 oder 8.3
 - **Extensions:** mbstring, json
+- **Message Queue Worker:** Für asynchrone Verarbeitung im Admin
 
 ### Technologie-Stack
 
@@ -173,6 +244,9 @@ bin/console wsc:variant:update --product-numbers="tollesleder" --number-only
 - **Repository Pattern**: Nutzt `product.repository` für alle Datenbankoperationen
 - **Criteria & Filter**: Verwendet Criteria API für sichere und performante Datenbankabfragen
 - **Associations**: Lädt Variantenoptionen über DAL-Associations
+- **Twig Template Engine**: Flexible Namens- und Nummern-Generierung via Twig-Templates
+- **Symfony Messenger**: Asynchrone Verarbeitung über Message Queue mit Progress-Tracking
+- **Admin SDK**: Vue.js 3 basiertes Admin-Interface
 
 ### Dateistruktur
 
@@ -184,10 +258,38 @@ WSCPluginSWVariantUpdater/
 │   └── dependabot.yml                      # Dependency Updates
 ├── src/
 │   ├── Command/
-│   │   └── UpdateVariantCommand.php        # Console Command
+│   │   ├── UpdateVariantCommand.php        # CLI Command
+│   │   └── DebugVariantCommand.php         # Debug Command
+│   ├── Controller/
+│   │   └── Administration/
+│   │       └── VariantUpdateController.php # Admin API Controller
+│   ├── Entity/
+│   │   ├── VariantUpdateProgress/          # Progress-Tracking Entities
+│   │   └── VariantUpdateLog/               # Log Entities
+│   ├── Message/
+│   │   ├── UpdateVariantsMessage.php       # Main Message
+│   │   └── UpdateVariantsBatchMessage.php  # Batch Message
+│   ├── MessageHandler/
+│   │   ├── UpdateVariantsMessageHandler.php       # Main Handler
+│   │   └── UpdateVariantsBatchMessageHandler.php  # Batch Handler
+│   ├── Migration/
+│   │   ├── Migration1234567890CreateProgressTable.php
+│   │   └── Migration1234567891CreateLogTable.php
 │   ├── Resources/
+│   │   ├── app/
+│   │   │   └── administration/
+│   │   │       └── src/
+│   │   │           └── module/wsc-variant-updater/  # Admin UI
 │   │   └── config/
-│   │       └── services.xml                # Service-Konfiguration
+│   │       ├── config.xml                  # Plugin-Konfiguration
+│   │       └── services.xml                # Service DI
+│   ├── Service/
+│   │   ├── BatchSizeCalculator.php         # Adaptive Batch-Sizing
+│   │   ├── ProgressTracker.php             # Progress-Tracking
+│   │   ├── TwigTemplateRenderer.php        # Twig-Templates
+│   │   ├── VariantUpdateConfig.php         # Config Value Object
+│   │   ├── VariantUpdateResult.php         # Result Value Object
+│   │   └── VariantUpdateService.php        # Core Service
 │   └── WSCPluginSWVariantUpdater.php       # Plugin-Basisklasse
 ├── .php-cs-fixer.dist.php                  # PHP-CS-Fixer Config
 ├── phpstan.neon                            # PHPStan Config
@@ -384,6 +486,40 @@ bin/console plugin:refresh
 bin/console cache:clear
 ```
 
+### Admin-Interface zeigt keine Änderungen
+Nach Plugin-Updates müssen die Admin-Assets neu gebaut werden:
+
+```bash
+bin/console plugin:update WSCPluginSWVariantUpdater
+# Baut automatisch Admin-Assets und leert Cache
+```
+
+Manuell:
+```bash
+bin/build-administration.sh
+bin/console cache:clear
+```
+
+Dann im Browser: `Ctrl + Shift + R` (Hard-Reload)
+
+### Message Queue Worker läuft nicht
+Updates im Admin werden über die Message Queue verarbeitet. Starte den Worker:
+
+```bash
+# In separatem Terminal/Screen/tmux
+bin/console messenger:consume async -vv
+
+# Oder als Service (empfohlen für Produktion)
+# Siehe: https://symfony.com/doc/current/messenger.html#deploying-to-production
+```
+
+### Progress-Bar zeigt keinen Fortschritt
+Prüfe, ob der Message Queue Worker läuft:
+
+```bash
+bin/console messenger:stats
+```
+
 ### Produkt nicht gefunden
 Stellen Sie sicher, dass:
 - Die Artikelnummer korrekt ist
@@ -392,6 +528,17 @@ Stellen Sie sicher, dass:
 
 ### Keine Varianten gefunden
 Das Hauptprodukt muss Varianten haben. Überprüfen Sie im Admin-Panel, ob Varianten für das Produkt angelegt sind.
+
+### Twig-Template Fehler
+Prüfe die Syntax deiner Templates in der Plugin-Konfiguration. Verfügbare Variablen:
+
+**Für Namen:**
+- `parentProduct.translated.name`
+- `options` (Array von Options-Entities)
+
+**Für Nummern:**
+- `parentProduct.productNumber`
+- `options|map(o => o.translated.name|lower|replace({' ': '-'}))|join('-')`
 
 ## Support & Beiträge
 
@@ -409,6 +556,18 @@ Beiträge sind willkommen! Bitte stellen Sie sicher, dass:
 MIT License - Siehe LICENSE-Datei für Details.
 
 ## Changelog
+
+### Version 2.0.0 (2025-12-25)
+- ✨ **NEU:** Admin-Interface unter "Einstellungen → Erweiterungen"
+- ✨ **NEU:** Twig-Template Support für flexible Namens- und Nummern-Generierung
+- ✨ **NEU:** Asynchrone Verarbeitung via Message Queue mit Progress-Tracking
+- ✨ **NEU:** `--all-products` Flag für CLI (mit Bestätigung)
+- ✨ **NEU:** Automatischer Admin-Assets-Build bei `plugin:update`
+- ✨ **NEU:** SystemConfig-Integration für Standard-Optionen
+- 🔧 Improved: Service-Layer Architektur mit BatchSizeCalculator und ProgressTracker
+- 🔧 Improved: Translation-Support für mehrsprachige Shops
+- 🔧 Improved: Duplicate-Check für Produktnummern
+- 📝 Improved: Umfangreiche Code-Dokumentation und PHPDoc
 
 ### Version 1.0.0
 - Initiales Release

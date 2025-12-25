@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
+
+    <card>
+        <title>Template-Konfiguration</title>
+        <title lang="en-GB">Template Configuration</title>
+
+        <input-field type="text">
+            <name>nameTemplate</name>
+            <label>Twig-Template für Produktnamen</label>
+            <label lang="en-GB">Twig Template for Product Names</label>
+            <helpText>Verfügbare Variablen: parentProduct (mit .name, .productNumber), options (Array mit .name, .group.name)</helpText>
+            <helpText lang="en-GB">Available variables: parentProduct (with .name, .productNumber), options (array with .name, .group.name)</helpText>
+            <defaultValue>{{ parentProduct.name }} {{ options|map(o => o.name)|join(' ') }}</defaultValue>
+        </input-field>
+
+        <input-field type="text">
+            <name>numberTemplate</name>
+            <label>Twig-Template für Produktnummern</label>
+            <label lang="en-GB">Twig Template for Product Numbers</label>
+            <helpText>Verfügbare Variablen: parentProduct, options - Beispiel: {{ parentProduct.productNumber }}-{{ options|map(o => o.name|lower|replace({' ': '-'}))|join('-') }}</helpText>
+            <helpText lang="en-GB">Available variables: parentProduct, options - Example: {{ parentProduct.productNumber }}-{{ options|map(o => o.name|lower|replace({' ': '-'}))|join('-') }}</helpText>
+            <defaultValue>{{ parentProduct.productNumber }}-{{ options|map(o => o.name|lower|replace({' ': '-'}))|join('-') }}</defaultValue>
+        </input-field>
+    </card>
+
+    <card>
+        <title>Update-Optionen</title>
+        <title lang="en-GB">Update Options</title>
+
+        <input-field type="bool">
+            <name>nameOnly</name>
+            <label>Nur Namen aktualisieren</label>
+            <label lang="en-GB">Update names only</label>
+            <defaultValue>false</defaultValue>
+        </input-field>
+
+        <input-field type="bool">
+            <name>numberOnly</name>
+            <label>Nur Nummern aktualisieren</label>
+            <label lang="en-GB">Update numbers only</label>
+            <defaultValue>false</defaultValue>
+        </input-field>
+
+        <input-field type="int">
+            <name>batchSize</name>
+            <label>Initiale Batch-Größe</label>
+            <label lang="en-GB">Initial Batch Size</label>
+            <helpText>Anzahl der Produkte pro Batch (wird automatisch angepasst)</helpText>
+            <helpText lang="en-GB">Number of products per batch (will be adjusted automatically)</helpText>
+            <defaultValue>100</defaultValue>
+            <min>10</min>
+            <max>500</max>
+        </input-field>
+    </card>
+</config>

@@ -1,0 +1,104 @@
+{% block wsc_variant_updater_index %}
+<sw-page class="wsc-variant-updater-index">
+    {% block wsc_variant_updater_index_header %}
+    <template #smart-bar-header>
+        <h2>{{ $tc('wsc-variant-updater.general.mainMenuItemGeneral') }}</h2>
+    </template>
+    {% endblock %}
+
+    {% block wsc_variant_updater_index_content %}
+    <template #content>
+        <sw-card-view>
+            {% block wsc_variant_updater_mode_selection %}
+            <sw-card :title="$tc('wsc-variant-updater.index.modeSelectionTitle')" :isLoading="isLoading">
+                <sw-select-field
+                    v-model="mode"
+                    :label="$tc('wsc-variant-updater.index.modeLabel')"
+                    :options="modeOptions"
+                    @change="onModeChange">
+                </sw-select-field>
+
+                {% block wsc_variant_updater_mode_product_numbers %}
+                <sw-text-field
+                    v-if="mode === 'product-numbers'"
+                    v-model="productNumbers"
+                    :label="$tc('wsc-variant-updater.index.productNumbersLabel')"
+                    :placeholder="$tc('wsc-variant-updater.index.productNumbersPlaceholder')"
+                    :helpText="$tc('wsc-variant-updater.index.productNumbersHelp')">
+                </sw-text-field>
+                {% endblock %}
+
+                {% block wsc_variant_updater_mode_all %}
+                <sw-alert v-if="mode === 'all'" variant="warning">
+                    {{ $tc('wsc-variant-updater.index.allProductsWarning') }}
+                </sw-alert>
+                {% endblock %}
+            </sw-card>
+            {% endblock %}
+
+            {% block wsc_variant_updater_options %}
+            <sw-card :title="$tc('wsc-variant-updater.index.optionsTitle')" :isLoading="isLoading">
+                <sw-alert variant="info">
+                    {{ $tc('wsc-variant-updater.index.configHint') }}
+                </sw-alert>
+
+                <sw-switch-field
+                    v-model="config.dryRun"
+                    :label="$tc('wsc-variant-updater.index.dryRunLabel')"
+                    :helpText="$tc('wsc-variant-updater.index.dryRunHelp')">
+                </sw-switch-field>
+            </sw-card>
+            {% endblock %}
+
+            {% block wsc_variant_updater_progress %}
+            <sw-card v-if="progress" :title="$tc('wsc-variant-updater.index.progressTitle')">
+                <sw-progress-bar
+                    :value="progress.percentage"
+                    :max="100">
+                </sw-progress-bar>
+
+                <div class="wsc-variant-updater-progress-info">
+                    <p>{{ $tc('wsc-variant-updater.index.progressStatus') }}: {{ progress.status }}</p>
+                    <p>{{ $tc('wsc-variant-updater.index.progressProcessed') }}: {{ progress.processedProducts }} / {{ progress.totalProducts }}</p>
+                    <p v-if="progress.failedProducts > 0">
+                        {{ $tc('wsc-variant-updater.index.progressFailed') }}: {{ progress.failedProducts }}
+                    </p>
+                </div>
+            </sw-card>
+            {% endblock %}
+
+            {% block wsc_variant_updater_actions %}
+            <sw-card>
+                <sw-button
+                    variant="primary"
+                    @click="onExecute"
+                    :disabled="isLoading">
+                    {{ $tc('wsc-variant-updater.index.executeButton') }}
+                </sw-button>
+            </sw-card>
+            {% endblock %}
+        </sw-card-view>
+
+        {% block wsc_variant_updater_confirmation_modal %}
+        <sw-modal
+            v-if="showAllConfirmation"
+            @modal-close="onCancelAll"
+            :title="$tc('wsc-variant-updater.index.confirmAllTitle')"
+            variant="small">
+            <p>{{ $tc('wsc-variant-updater.index.confirmAllMessage') }}</p>
+
+            <template #modal-footer>
+                <sw-button @click="onCancelAll" size="small">
+                    {{ $tc('wsc-variant-updater.index.cancelButton') }}
+                </sw-button>
+
+                <sw-button @click="onConfirmAll" variant="primary" size="small">
+                    {{ $tc('wsc-variant-updater.index.confirmButton') }}
+                </sw-button>
+            </template>
+        </sw-modal>
+        {% endblock %}
+    </template>
+    {% endblock %}
+</sw-page>
+{% endblock %}

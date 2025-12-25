@@ -1,7 +1,7 @@
 {
     "name": "wsc-plugin/sw-variant-updater",
     "description": "Shopware 6 Plugin to update product variant names and numbers",
-    "version": "1.0.0",
+    "version": "6.0.0",
     "type": "shopware-platform-plugin",
     "license": "MIT",
     "authors": [
@@ -28,8 +28,8 @@
     "extra": {
         "shopware-plugin-class": "WSCPlugin\\SWVariantUpdater\\WSCPluginSWVariantUpdater",
         "label": {
-            "de-DE": "Varianten Updater",
-            "en-GB": "Variant Updater"
+            "de-DE": "WSC Varianten Updater",
+            "en-GB": "WSC Variant Updater"
         },
         "description": {
             "de-DE": "Aktualisiert Namen und Artikelnummern von Produktvarianten",

@@ -5,9 +5,15 @@
 
     <services>
         <!-- Service Layer -->
+        <service id="WSCPlugin\SWVariantUpdater\Service\TwigTemplateRenderer">
+            <argument type="service" id="twig"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+        </service>
+
         <service id="WSCPlugin\SWVariantUpdater\Service\VariantUpdateService">
             <argument type="service" id="product.repository"/>
             <argument type="service" id="logger"/>
+            <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\TwigTemplateRenderer"/>
         </service>
 
         <service id="WSCPlugin\SWVariantUpdater\Service\BatchSizeCalculator"/>
@@ -47,7 +53,26 @@
         <service id="WSCPlugin\SWVariantUpdater\Command\UpdateVariantCommand">
             <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\VariantUpdateService"/>
             <argument type="service" id="messenger.default_bus"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
             <tag name="console.command"/>
+        </service>
+
+        <service id="WSCPlugin\SWVariantUpdater\Command\DebugVariantCommand">
+            <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\VariantUpdateService"/>
+            <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\TwigTemplateRenderer"/>
+            <tag name="console.command"/>
+        </service>
+
+        <!-- Controllers -->
+        <service id="WSCPlugin\SWVariantUpdater\Controller\Administration\VariantUpdateController" public="true">
+            <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\VariantUpdateService"/>
+            <argument type="service" id="messenger.default_bus"/>
+            <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\ProgressTracker"/>
+            <argument type="service" id="Shopware\Core\System\SystemConfig\SystemConfigService"/>
+            <argument type="service" id="logger"/>
+            <call method="setContainer">
+                <argument type="service" id="service_container"/>
+            </call>
         </service>
     </services>
 </container>

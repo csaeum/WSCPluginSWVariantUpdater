@@ -12,10 +12,14 @@ use Shopware\Core\Framework\DataAbstractionLayer\Search\Filter\EqualsFilter;
 
 class VariantUpdateService
 {
+    public readonly EntityRepository $productRepository;
+
     public function __construct(
-        private readonly EntityRepository $productRepository,
-        private readonly LoggerInterface $logger
+        EntityRepository $productRepository,
+        private readonly LoggerInterface $logger,
+        private readonly TwigTemplateRenderer $templateRenderer
     ) {
+        $this->productRepository = $productRepository;
     }
 
     /**
@@ -76,7 +80,7 @@ class VariantUpdateService
     }
 
     /**
-     * Load parent product by product number.
+     * Load parent product by product number (public for debugging).
      */
     public function loadParentProduct(string $productNumber, Context $context): ?ProductEntity
     {
@@ -114,19 +118,12 @@ class VariantUpdateService
         $updates = [];
         $changes = [];
 
-        // Get option names
-        $optionNames = [];
-        if ($variant->getOptions()) {
-            foreach ($variant->getOptions() as $option) {
-                $optionNames[] = $option->getName();
-            }
-        }
+        // Get options as array
+        $options = $variant->getOptions() ? $variant->getOptions()->getElements() : [];
 
-        $optionString = implode(' ', $optionNames);
-
-        // Update name
+        // Update name using Twig template
         if (!$config->numberOnly) {
-            $newName = trim($parent->getName() . ' ' . $optionString);
+            $newName = $this->templateRenderer->renderProductName($parent, $options);
             if ($variant->getName() !== $newName) {
                 $updates['name'] = $newName;
                 $changes['name'] = [
@@ -137,12 +134,9 @@ class VariantUpdateService
             }
         }
 
-        // Update product number
+        // Update product number using Twig template
         if (!$config->nameOnly) {
-            $newProductNumber = $this->generateProductNumber(
-                $parent->getProductNumber(),
-                $optionNames
-            );
+            $newProductNumber = $this->templateRenderer->renderProductNumber($parent, $options);
 
             // Check for duplicates
             if ($newProductNumber !== $variant->getProductNumber()) {
