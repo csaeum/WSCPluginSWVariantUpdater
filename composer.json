@@ -3,12 +3,39 @@
     "description": "Shopware 6 Plugin to update product variant names and numbers",
     "version": "6.0.0",
     "type": "shopware-platform-plugin",
-    "license": "MIT",
+    "license": "GPL-3.0-or-later",
     "authors": [
         {
-            "name": "WSC Plugin"
+            "name": "Christian Säum",
+            "email": "Christian.Saeum@Web-SEO-Consulting.eu"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "WSCPlugin\\SWVariantUpdater\\": "src/"
+        }
+    },
+    "extra": {
+        "label": {
+            "de-DE": "WSC Varianten Updater",
+            "en-GB": "WSC Variant Updater"
+        },
+        "description": {
+            "de-DE": "Aktualisiert Namen und Artikelnummern von Produktvarianten",
+            "en-GB": "Updates names and product numbers of product variants"
+        },
+        "shopware-plugin-class": "WSCPlugin\\SWVariantUpdater\\WSCPluginSWVariantUpdater",
+        "supportLink": {
+            "de-DE": "https://www.Web-SEO-Consulting.eu/support",
+            "en-GB": "https://www.Web-SEO-Consulting.eu/support",
+            "fr-FR": "https://www.Web-SEO-Consulting.eu/support"
+        },
+        "manufacturerLink": {
+            "de-DE": "https://www.Web-SEO-Consulting.eu",
+            "en-GB": "https://www.Web-SEO-Consulting.eu",
+            "fr-FR": "https://www.Web-SEO-Consulting.eu"
+        }
+    },
     "require": {
         "shopware/core": "~6.5.0|~6.6.0|~6.7.0"
     },
@@ -24,21 +51,5 @@
             "@phpstan",
             "@cs-check"
         ]
-    },
-    "extra": {
-        "shopware-plugin-class": "WSCPlugin\\SWVariantUpdater\\WSCPluginSWVariantUpdater",
-        "label": {
-            "de-DE": "WSC Varianten Updater",
-            "en-GB": "WSC Variant Updater"
-        },
-        "description": {
-            "de-DE": "Aktualisiert Namen und Artikelnummern von Produktvarianten",
-            "en-GB": "Updates names and product numbers of product variants"
-        }
-    },
-    "autoload": {
-        "psr-4": {
-            "WSCPlugin\\SWVariantUpdater\\": "src/"
-        }
     }
 }
