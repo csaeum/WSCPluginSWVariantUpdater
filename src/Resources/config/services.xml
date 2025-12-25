@@ -10,9 +10,43 @@
             <argument type="service" id="logger"/>
         </service>
 
+        <service id="WSCPlugin\SWVariantUpdater\Service\BatchSizeCalculator"/>
+
+        <service id="WSCPlugin\SWVariantUpdater\Service\ProgressTracker">
+            <argument type="service" id="wsc_variant_update_progress.repository"/>
+            <argument type="service" id="wsc_variant_update_log.repository"/>
+        </service>
+
+        <!-- Entity Definitions -->
+        <service id="WSCPlugin\SWVariantUpdater\Entity\VariantUpdateProgress\VariantUpdateProgressDefinition">
+            <tag name="shopware.entity.definition" entity="wsc_variant_update_progress"/>
+        </service>
+
+        <service id="WSCPlugin\SWVariantUpdater\Entity\VariantUpdateLog\VariantUpdateLogDefinition">
+            <tag name="shopware.entity.definition" entity="wsc_variant_update_log"/>
+        </service>
+
+        <!-- Message Handlers -->
+        <service id="WSCPlugin\SWVariantUpdater\MessageHandler\UpdateVariantsMessageHandler">
+            <argument type="service" id="messenger.bus.shopware"/>
+            <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\ProgressTracker"/>
+            <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\BatchSizeCalculator"/>
+            <argument type="service" id="logger"/>
+            <tag name="messenger.message_handler"/>
+        </service>
+
+        <service id="WSCPlugin\SWVariantUpdater\MessageHandler\UpdateVariantsBatchMessageHandler">
+            <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\VariantUpdateService"/>
+            <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\ProgressTracker"/>
+            <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\BatchSizeCalculator"/>
+            <argument type="service" id="logger"/>
+            <tag name="messenger.message_handler"/>
+        </service>
+
         <!-- Commands -->
         <service id="WSCPlugin\SWVariantUpdater\Command\UpdateVariantCommand">
             <argument type="service" id="WSCPlugin\SWVariantUpdater\Service\VariantUpdateService"/>
+            <argument type="service" id="messenger.bus.shopware"/>
             <tag name="console.command"/>
         </service>
     </services>

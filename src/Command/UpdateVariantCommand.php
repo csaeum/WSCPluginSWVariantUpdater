@@ -3,12 +3,15 @@
 namespace WSCPlugin\SWVariantUpdater\Command;
 
 use Shopware\Core\Framework\Context;
+use Shopware\Core\Framework\Uuid\Uuid;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\Messenger\MessageBusInterface;
+use WSCPlugin\SWVariantUpdater\Message\UpdateVariantsMessage;
 use WSCPlugin\SWVariantUpdater\Service\VariantUpdateConfig;
 use WSCPlugin\SWVariantUpdater\Service\VariantUpdateService;
 
@@ -19,7 +22,8 @@ use WSCPlugin\SWVariantUpdater\Service\VariantUpdateService;
 class UpdateVariantCommand extends Command
 {
     public function __construct(
-        private readonly VariantUpdateService $variantUpdateService
+        private readonly VariantUpdateService $variantUpdateService,
+        private readonly MessageBusInterface $messageBus
     ) {
         parent::__construct();
     }
@@ -50,6 +54,12 @@ class UpdateVariantCommand extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Update only the product number'
+            )
+            ->addOption(
+                'sync',
+                null,
+                InputOption::VALUE_NONE,
+                'Execute synchronously (default: async via message queue)'
             );
     }
 
@@ -85,6 +95,27 @@ class UpdateVariantCommand extends Command
             $io->warning('DRY RUN MODE - No changes will be saved');
         }
 
+        $syncMode = $input->getOption('sync');
+
+        // Execute sync or async
+        if ($syncMode) {
+            return $this->executeSynchronous($io, $productNumbers, $config, $context);
+        }
+
+        return $this->executeAsynchronous($io, $productNumbers, $config, $context);
+    }
+
+    /**
+     * Execute synchronously (direct processing).
+     */
+    private function executeSynchronous(
+        SymfonyStyle $io,
+        array $productNumbers,
+        VariantUpdateConfig $config,
+        Context $context
+    ): int {
+        $io->info('Executing synchronously...');
+
         // Process variants using service
         $result = $this->variantUpdateService->updateVariants(
             $productNumbers,
@@ -117,6 +148,41 @@ class UpdateVariantCommand extends Command
         $this->displaySummary($io, $result, $config);
 
         return $result->hasErrors() ? Command::FAILURE : Command::SUCCESS;
+    }
+
+    /**
+     * Execute asynchronously (via message queue).
+     */
+    private function executeAsynchronous(
+        SymfonyStyle $io,
+        array $productNumbers,
+        VariantUpdateConfig $config,
+        Context $context
+    ): int {
+        $batchId = 'batch_' . Uuid::randomHex();
+
+        $io->info('Executing asynchronously via message queue...');
+
+        // Create and dispatch message
+        $message = new UpdateVariantsMessage(
+            $productNumbers,
+            $config,
+            $batchId,
+            $context
+        );
+
+        $this->messageBus->dispatch($message);
+
+        $io->success([
+            'Message queue job created successfully!',
+            sprintf('Batch ID: %s', $batchId),
+            sprintf('Products: %d', \count($productNumbers)),
+            '',
+            'The update will be processed in the background.',
+            'Check progress in the Shopware admin or logs.',
+        ]);
+
+        return Command::SUCCESS;
     }
 
     /**
